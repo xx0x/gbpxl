@@ -68,7 +68,7 @@
  */
 
 #include "gbp/gameboy_printer.cpp"
-#include "test_image.h"
+#include "test_image_custom_frame.h"
 
 // PINS (Arduino Nano Every)
 #define PIN_DIP_A 8
@@ -90,21 +90,27 @@
 #define BUFFER_SIZE 2880
 byte printBuffer[BUFFER_SIZE];
 int totalBytes = 0;
-#define LINES_AT_ONCE_3X 48 // if your printer wont print the whole image, try values: 36, 24, 16
+#define LINES_AT_ONCE_XL 48 // if your printer wont print the whole image, try values: 36, 24, 16
+
+// XL SCALE (don't change this)
+#define XL_SCALE 3
 
 // SETTINGS
-#define MAX_SCALE 3
 #define SLOW_BAUD_RATE 9600
 #define FAST_BAUD_RATE 38400
 #define PARTIAL_CUT 66
 #define FULL_CUT 65
 #define PC_BAUD_RATE 115200
+#define OBSOLETE_METHOD 0
+#define DEFAULT_METHOD 1
 
-byte scale = 1;                          // DIP switches 1,2
-byte cut = false;                        // DIP switch 3
-unsigned long baudRate = SLOW_BAUD_RATE; // DIP switch 4
-byte info = false;                       // prints text before and after print, specified by functions infoBefore, infoAfter
-byte cutMode = PARTIAL_CUT;              // full cut is not supported by TM88
+byte scales[] = {1, 2, XL_SCALE, XL_SCALE};
+
+byte scale = 1;                // DIP switches 1,2
+byte cut = false;              // DIP switch 3
+byte method = OBSOLETE_METHOD; // DIP switch 4
+byte info = false;             // prints text before and after print, specified by functions infoBefore, infoAfter
+byte cutMode = PARTIAL_CUT;    // full cut is not supported by TM88
 
 // DEBUG STUFF
 #define COPY_TEST_IMAGE_TO_BUFFER 1
@@ -221,6 +227,7 @@ void loop()
         gbp_printer.uptime_til_timeout_ms = 0;
     }
 
+    // If new data recieved or button pushed, start print
     if (schedulePrint || !digitalRead(PIN_BTN))
     {
         bool w = false;
@@ -262,11 +269,11 @@ void print()
 
     if (scale > 2)
     {
-        scaledPrint();
+        xlPrint();
     }
     else
     {
-        if (baudRate == FAST_BAUD_RATE)
+        if (method == DEFAULT_METHOD)
         {
             beginPrint();
             sendBuffer();
@@ -274,7 +281,7 @@ void print()
         }
         else
         {
-            beginPrintOld();
+            beginPrintObsolete();
             sendBuffer();
         }
     }
@@ -333,7 +340,7 @@ void beginPrint()
  * Begins the print - method for older printers (scale: 1x, 2x)
  * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=94
  */
-void beginPrintOld()
+void beginPrintObsolete()
 {
     epson_write(29);                          // GS
     epson_write(118);                         // v
@@ -376,39 +383,50 @@ void finishPrint()
  * Provides 3x scaled print
  * since TM-T88 doesn't have big enough buffer for 3x scaled image, it must be sent in batches
  */
-void scaledPrint()
+void xlPrint()
 {
-    Serial.println("Begin scaledPrint");
-    for (byte base = 0; base < IMG_HEIGHT; base += LINES_AT_ONCE_3X)
+    Serial.println("Begin xl print");
+    for (byte base = 0; base < IMG_HEIGHT; base += LINES_AT_ONCE_XL)
     {
-        if (baudRate == FAST_BAUD_RATE)
+        if (method == DEFAULT_METHOD)
         {
-            scaledPrintBegin();
+            xlPrintBegin();
         }
         else
         {
-            scaledPrintBeginOld();
+            xlPrintBeginObsolete();
         }
 
-        for (byte l = 0; l < LINES_AT_ONCE_3X; l++)
+        for (byte l = 0; l < LINES_AT_ONCE_XL; l++)
         {
             byte line = base + l;
-            for (byte y = 0; y < scale; y++) // copy line 3x (scale = 3)
+            for (byte y = 0; y < scale; y++) // copy each line
             {
                 for (byte x = 0; x < EPSON_BYTES_PER_LINE; x++) // for each pixel in line
                 {
                     int i = line * EPSON_BYTES_PER_LINE + x;
+                    uint32_t out = bitscale(printBuffer[i], XL_SCALE);
+
+                    byte currentBuffer[XL_SCALE] = {out >> 16 & 0xFF, out >> 8 & 0xFF, out & 0xFF};
+                    for (byte b = 0; b < XL_SCALE; b++)
+                    {
+                        if (scale == XL_SCALE)
+                        {
+                            epson_write(currentBuffer[b]);
+                        }
+                        else
+                        {
+                            // TODO: larger than XL scale
+                        }
+                    }
+
                     digitalWrite(PIN_LED, ((i % 60) < 10) ? HIGH : LOW);
-                    uint32_t out = bitscale(printBuffer[i], scale);
-                    epson_write(out >> 16 & 0xFF);
-                    epson_write(out >> 8 & 0xFF);
-                    epson_write(out & 0xFF);
                 }
             }
         }
-        if (baudRate == FAST_BAUD_RATE)
+        if (method == DEFAULT_METHOD)
         {
-            scaledPrintEnd();
+            xlPrintEnd();
         }
     }
 }
@@ -416,10 +434,10 @@ void scaledPrint()
 /**
  * Starts scaled print batch
  */
-void scaledPrintBegin()
+void xlPrintBegin()
 {
-    unsigned int w = IMG_WIDTH * scale;
-    unsigned int h = LINES_AT_ONCE_3X * scale;
+    unsigned int w = IMG_WIDTH * XL_SCALE;
+    unsigned int h = LINES_AT_ONCE_XL * XL_SCALE;
     unsigned int payload = w / 8 * h + 10;
     epson_write(29);                  // GS
     epson_write(40);                  // (
@@ -441,10 +459,10 @@ void scaledPrintBegin()
 /**
  * Starts scaled print batch - method for older printers
  */
-void scaledPrintBeginOld()
+void xlPrintBeginObsolete()
 {
-    unsigned int w = IMG_WIDTH * scale;
-    unsigned int h = LINES_AT_ONCE_3X * scale;
+    unsigned int w = IMG_WIDTH * XL_SCALE;
+    unsigned int h = LINES_AT_ONCE_XL * XL_SCALE;
     epson_write(29);                  // GS
     epson_write(118);                 // v
     epson_write(48);                  // 0
@@ -458,7 +476,7 @@ void scaledPrintBeginOld()
 /**
  * Finishes "on-the-fly" print batch
  */
-void scaledPrintEnd()
+void xlPrintEnd()
 {
     finishPrint();
 }
@@ -514,16 +532,12 @@ void updateDipSwitches()
 {
     bool a = !digitalRead(PIN_DIP_A);
     bool b = !digitalRead(PIN_DIP_B);
-    scale = ((b << 1) | a) + 1;
-    if (scale > MAX_SCALE)
-    {
-        scale = MAX_SCALE;
-    }
+    scale = scales[((b << 1) | a)];
     cut = !digitalRead(PIN_DIP_CUT);
-    unsigned long newBaudRate = !digitalRead(PIN_DIP_RATE) ? FAST_BAUD_RATE : SLOW_BAUD_RATE;
-    if (newBaudRate != baudRate)
+    unsigned long oldBaudRate = epson_baudrate();
+    method = !digitalRead(PIN_DIP_RATE) ? DEFAULT_METHOD : OBSOLETE_METHOD;
+    if (oldBaudRate != epson_baudrate())
     {
-        baudRate = newBaudRate;
         epson_start();
     }
 }
@@ -538,7 +552,15 @@ void epson_start()
         Serial1.end();
         delay(200);
     }
-    Serial1.begin(baudRate);
+    Serial1.begin(epson_baudrate());
+}
+
+/**
+ *  Returns baud rate according to selected method 
+ */
+unsigned long epson_baudrate()
+{
+    return method == DEFAULT_METHOD ? FAST_BAUD_RATE : SLOW_BAUD_RATE;
 }
 
 /**
