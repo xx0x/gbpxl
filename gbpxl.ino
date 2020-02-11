@@ -115,6 +115,7 @@ byte cutMode = PARTIAL_CUT;    // full cut is not supported by TM88
 // DEBUG STUFF
 #define COPY_TEST_IMAGE_TO_BUFFER 1
 #define SEND_TO_PC_AFTER_PRINTING 0
+#define STARTUP_PRINTER_TEST 1
 
 /**
  * Printed if info = true
@@ -155,14 +156,19 @@ void setup()
 
     epson_start();
     delay(100);
-    epson_feed(5);
-
-    Serial.println("Device loaded, waiting for print data...");
-    digitalWrite(PIN_LED, HIGH);
+    epson_feed(2);
 
 #if COPY_TEST_IMAGE_TO_BUFFER
     copyTestImageToBuffer();
 #endif
+
+#if STARTUP_PRINTER_TEST
+    Serial.println("Sending test print");
+    printerTest();
+#endif
+
+    Serial.println("Device loaded, waiting for print data...");
+    digitalWrite(PIN_LED, HIGH);
 }
 
 /**
@@ -543,6 +549,23 @@ void updateDipSwitches()
 }
 
 /**
+ * Prints a test
+ */
+void printerTest()
+{
+    epson_println("== xbpxl ready ==");
+    epson_feed(1);
+    epson_print("baud rate: ");
+    epson_println(epson_baudrate());
+    epson_print("scale: ");
+    epson_println(scale);
+    epson_print("method: ");
+    epson_println(method);
+    epson_feed(2);
+    epson_cut();
+}
+
+/**
  * Starts the printer
  */
 void epson_start()
@@ -605,11 +628,35 @@ void epson_write(byte c)
 }
 
 /**
- * Sends a string
+ * Prints a text string
  */
 size_t epson_println(const char *str)
 {
     return Serial1.println(str);
+}
+
+/**
+ * Prints a number
+ */
+size_t epson_println(unsigned long num)
+{
+    return Serial1.println(num);
+}
+
+/**
+ * Prints a text string
+ */
+size_t epson_print(const char *str)
+{
+    return Serial1.print(str);
+}
+
+/**
+ * Prints a number
+ */
+size_t epson_print(unsigned long num)
+{
+    return Serial1.print(num);
 }
 
 /**
