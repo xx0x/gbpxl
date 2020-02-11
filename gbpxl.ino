@@ -553,7 +553,7 @@ void updateDipSwitches()
  */
 void printerTest()
 {
-    epson_println("== xbpxl ready ==");
+    epson_println("xbpxl ready");
     epson_feed(1);
     epson_print("baud rate: ");
     epson_println(epson_baudrate());
@@ -567,6 +567,7 @@ void printerTest()
 
 /**
  * Starts the printer
+ * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=192#esc_atsign
  */
 void epson_start()
 {
@@ -576,6 +577,8 @@ void epson_start()
         delay(200);
     }
     Serial1.begin(epson_baudrate());
+    Serial1.write(27); // ESC
+    Serial1.write(64); // @
 }
 
 /**
