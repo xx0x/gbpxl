@@ -1,8 +1,7 @@
 /**
  * gbpxl (Game Boy Printer XL)
  * 
- * For use with Game Boy Camera and EPSON TM-T88 printer series
- * (and possibly other ESC/POS compatible printers)
+ * Interface between Game Boy Camera and ESC/POS compatible printers
  * 
  * Made by Vaclav Mach (www.xx0x.cz/gbpxl)
  * 
