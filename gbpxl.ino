@@ -11,34 +11,43 @@
  * a) custom gbpxl board (github.com/xx0x/gbpxl)
  * b) Arduino Nano Every + TTL->RS232 converter
  * 
- * 
  * DIP SWITCH SETTINGS:
  *
- * Scale     1x            2x            3x                
- *           DIP 1 = OFF   DIP 1 = ON    DIP 1 = (doesn't care)                     
- *           DIP 2 = OFF   DIP 2 = OFF   DIP 2 = ON                      
+ * 1: SCALE
+ * OFF: 2x
+ * ON: 3x
  * 
- * Cut       OFF           ON                   
- * paper     DIP 3 = OFF   DIP 3 = ON                       
+ * 2: CUT after each print
+ * OFF: No
+ * ON: Yes
  * 
- * Printer   9600          38400
- * baud      DIP 4 = OFF   DIP 4 = ON
- * rate 
+ * 3: BAUD RATE
+ * OFF: 9600
+ * ON: 38400
  * 
+ * 4: METHOD
+ * OFF: "ESC *"
+ * ON: "Gs v 0" when baudrate 9600
+ *     "Gs ( L" when baudrate 38400
+ * 
+ * TESTED WITH:             DIP  3  |  4
+ * Epson TM-T88III:             OFF | ON
+ * Epson TM-T88IV:              ON  | ON
+ * Wincor Nixdorf TH230:        ON  | OFF
+ * HPRT PPTII-A:                OFF | OFF
  * 
  * HOW TO WIRE THE BOARD:
  * 
  * Game Boy Link Connector
  * (cable at the end which plugs into the Game Boy)
  *  ___________
- * |  6  4  2  |
- *  \_5__3__1_/ 
- * 
- * 1 = VCC (can't be used - doesn't provide enough "juice" for the board)
- * 2 = SO (serial output)
- * 3 = SI (serial input)
- * 4 = SC (serial clock)
- * 6 = GND
+ * |  6  4  2  |                
+ *  \_5__3__1_/                 |  color codes
+ *                              |  (cheap cable from eBay)
+ * 2 = SO (serial output)       |  BROWN
+ * 3 = SI (serial input)        |  GREEN
+ * 4 = SC (serial clock)        |  BLUE
+ * 6 = GND                      |  RED
  * 
  * RJ-12 connector (power from printer's "DK" port)
  * (cable at the end which plugs into the printer) 
@@ -71,10 +80,10 @@
 #include "test_image_custom_frame.h"
 
 // PINS (Arduino Nano Every)
-#define PIN_DIP_A 8
-#define PIN_DIP_B 7
-#define PIN_DIP_CUT 6
-#define PIN_DIP_RATE 5
+#define PIN_DIP_SCALE 8
+#define PIN_DIP_CUT 7
+#define PIN_DIP_BAUDRATE 6
+#define PIN_DIP_METHOD 5
 #define PIN_BTN 9
 #define PIN_LED 13
 
@@ -88,12 +97,9 @@
 
 // BUFFER OPTIONS
 #define BUFFER_SIZE 2880
-byte printBuffer[BUFFER_SIZE];
-int totalBytes = 0;
-#define LINES_AT_ONCE_XL 48 // if your printer wont print the whole image, try values: 36, 24, 16
-
-// XL SCALE (don't change this)
-#define XL_SCALE 3
+byte printBuffer[BUFFER_SIZE]; // buffer stores data as raster bitmap, in rows
+unsigned int totalBytes = 0;   // bytes recieved from GameBoy
+#define LINES_AT_ONCE_XL 48    // if your printer wont print the whole image, try values: 36, 24, 16
 
 // SETTINGS
 #define SLOW_BAUD_RATE 9600
@@ -101,37 +107,19 @@ int totalBytes = 0;
 #define PARTIAL_CUT 66
 #define FULL_CUT 65
 #define PC_BAUD_RATE 115200
-#define OBSOLETE_METHOD 0
-#define DEFAULT_METHOD 1
+#define ESC_PRINT_METHOD 0
+#define GS_PRINT_METHOD 1
 
-byte scales[] = {1, 2, XL_SCALE, XL_SCALE};
-
-byte scale = 1;                // DIP switches 1,2
-byte cut = false;              // DIP switch 3
-byte method = OBSOLETE_METHOD; // DIP switch 4
-byte info = false;             // prints text before and after print, specified by functions infoBefore, infoAfter
-byte cutMode = PARTIAL_CUT;    // full cut is not supported by TM88
+byte scale = 2;                          // DIP switch 1
+byte cut = false;                        // DIP switch 2
+unsigned long baudRate = SLOW_BAUD_RATE; // DIP switch 3
+byte method = ESC_PRINT_METHOD;          // DIP switch 4
+byte cutMode = FULL_CUT;                 // full cut is not supported by TM88, but works with other
 
 // DEBUG STUFF
 #define COPY_TEST_IMAGE_TO_BUFFER 1
 #define SEND_TO_PC_AFTER_PRINTING 0
 #define STARTUP_PRINTER_TEST 1
-
-/**
- * Printed if info = true
- */
-void infoBefore()
-{
-    epson_println("gbpxl 0.1");
-}
-
-/**
- * Printed if info = true
- */
-void infoAfter()
-{
-    epson_println("print ok");
-}
 
 /**
  * Initial setup
@@ -140,10 +128,10 @@ void setup()
 {
     Serial.begin(PC_BAUD_RATE);
 
-    pinMode(PIN_DIP_A, INPUT_PULLUP);
-    pinMode(PIN_DIP_B, INPUT_PULLUP);
+    pinMode(PIN_DIP_SCALE, INPUT_PULLUP);
+    pinMode(PIN_DIP_METHOD, INPUT_PULLUP);
     pinMode(PIN_DIP_CUT, INPUT_PULLUP);
-    pinMode(PIN_DIP_RATE, INPUT_PULLUP);
+    pinMode(PIN_DIP_BAUDRATE, INPUT_PULLUP);
     pinMode(PIN_BTN, INPUT_PULLUP);
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
@@ -254,6 +242,8 @@ void loop()
  */
 void print()
 {
+    epson_linespacing(24);
+
     if (totalBytes == 0)
     {
         return;
@@ -261,49 +251,45 @@ void print()
 
     epson_center();
 
-    if (info)
-    {
-        if (!cut)
-        {
-            epson_feed(2);
-        }
-        infoBefore();
-        epson_feed(2);
-    }
-
     Serial.println("Data recieved, begin print!");
 
-    if (scale > 2)
+    if (method == GS_PRINT_METHOD)
     {
-        xlPrint();
-    }
-    else
-    {
-        if (method == DEFAULT_METHOD)
+        if (scale < 3)
         {
-            beginPrint();
-            sendBuffer();
-            finishPrint();
+            if (baudRate == FAST_BAUD_RATE)
+            {
+                printGsl();
+            }
+            else
+            {
+                printGsv0();
+            }
         }
         else
         {
-            beginPrintObsolete();
-            sendBuffer();
+            gsXlPrint();
+        }
+    }
+    else
+    {
+        if (scale == 2)
+        {
+            printEscAsterisk2x();
+        }
+        else if (scale == 3)
+        {
+            printEscAsterisk3x();
         }
     }
 
-    epson_feed(2);
+    epson_feed(7);
 
-    if (info)
-    {
-        infoAfter();
-        epson_feed(2);
-    }
     if (cut)
     {
-        if (!info)
+        if (method == ESC_PRINT_METHOD)
         {
-            epson_feed(1);
+            epson_feed(4);
         }
         epson_cut();
     }
@@ -319,10 +305,100 @@ void print()
 }
 
 /**
+ * Print by "ESC *" method
+ * 3x scale
+ * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=88
+ */
+void printEscAsterisk3x()
+{
+    epson_center();
+
+    int imgWidth = IMG_WIDTH * 3;
+    byte lineBuffer[IMG_WIDTH] = {};
+
+    // line is 8 pixels high (by using 8 dot density is scaled internaly by the printer itself)
+    for (byte line = 0; line < IMG_HEIGHT / 8; line++)
+    {
+        digitalWrite(PIN_LED, ((line % 2) == 0) ? HIGH : LOW);
+        byte lbi = 0;
+        // store in buffer for faster sending
+        for (byte column = 0; column < IMG_WIDTH; column++)
+        {
+            byte data = 0;
+            for (byte y = 0; y < 8; y++)
+            {
+                data = (data << 1) | bitRead(printBuffer[20 * y + line * 160 + column / 8], 7 - (column % 8));
+            }
+            lineBuffer[lbi++] = data;
+        }
+
+        // send data
+        epson_write(27);                   // ESC
+        epson_write(42);                   // *
+        epson_write(1);                    // 8-dot double density
+        epson_write(imgWidth & 0xFF);      // nL
+        epson_write(imgWidth >> 8 & 0xFF); // nH
+        for (lbi = 0; lbi < IMG_WIDTH; lbi++)
+        {
+            // repeat column 3 times
+            for (byte s = 0; s < 3; s++)
+            {
+                epson_write(lineBuffer[lbi]);
+            }
+        }
+        epson_write(10); // LF
+    }
+}
+
+/**
+ * Print by "ESC *" method
+ * 2x scale
+ * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=88
+ */
+void printEscAsterisk2x()
+{
+    epson_center();
+
+    int imgWidth = IMG_WIDTH;
+    byte lineBuffer[IMG_WIDTH * 3] = {};
+
+    // line is 12 pixels high
+    for (byte line = 0; line < IMG_HEIGHT / 12; line++)
+    {
+        digitalWrite(PIN_LED, ((line % 2) == 0) ? HIGH : LOW);
+        unsigned int lbi = 0;
+        for (byte column = 0; column < IMG_WIDTH; column++)
+        {
+            uint32_t data = 0;
+            for (byte y = 0; y < 12; y++)
+            {
+                byte a = bitRead(printBuffer[20 * y + line * 12 * EPSON_BYTES_PER_LINE + column / 8], 7 - (column % 8));
+                data = (((data << 1) | a) << 1) | a;
+            }
+            lineBuffer[lbi++] = data >> 16 & 0xff;
+            lineBuffer[lbi++] = data >> 8 & 0xff;
+            lineBuffer[lbi++] = data & 0xff;
+        }
+
+        // send data
+        epson_write(27);                   // ESC
+        epson_write(42);                   // *
+        epson_write(32);                   // 24-dot single density
+        epson_write(imgWidth & 0xFF);      // nL
+        epson_write(imgWidth >> 8 & 0xFF); // nH
+        for (unsigned int i = 0; i < lbi; i++)
+        {
+            epson_write(lineBuffer[i]);
+        }
+        epson_write(10); // LF
+    }
+}
+
+/**
  * Begins the print (scale: 1x, 2x)
  * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=99#gs_lparen_cl_fn112
  */
-void beginPrint()
+void printGsl()
 {
     unsigned int payload = BUFFER_SIZE + 10; // pL and pH specify the number of bytes following m as (pL + pH × 256).
     epson_write(29);                         // GS
@@ -340,13 +416,16 @@ void beginPrint()
     epson_write(IMG_WIDTH >> 8 & 0xFF);      // xH
     epson_write(IMG_HEIGHT & 0xFF);          // yL
     epson_write(IMG_HEIGHT >> 8 & 0xFF);     // yH
+
+    sendBuffer();
+    finishPrint();
 }
 
 /**
  * Begins the print - method for older printers (scale: 1x, 2x)
  * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=94
  */
-void beginPrintObsolete()
+void printGsv0()
 {
     epson_write(29);                          // GS
     epson_write(118);                         // v
@@ -356,6 +435,8 @@ void beginPrintObsolete()
     epson_write((IMG_WIDTH / 8) >> 8 & 0xFF); // xH
     epson_write(IMG_HEIGHT & 0xFF);           // yL
     epson_write(IMG_HEIGHT >> 8 & 0xFF);      // yH
+
+    sendBuffer();
 }
 
 /**
@@ -389,20 +470,19 @@ void finishPrint()
  * Provides 3x scaled print
  * since TM-T88 doesn't have big enough buffer for 3x scaled image, it must be sent in batches
  */
-void xlPrint()
+void gsXlPrint()
 {
     Serial.println("Begin xl print");
     for (byte base = 0; base < IMG_HEIGHT; base += LINES_AT_ONCE_XL)
     {
-        if (method == DEFAULT_METHOD)
+        if (baudRate == FAST_BAUD_RATE)
         {
-            xlPrintBegin();
+            gsXlPrintBeginGsl();
         }
         else
         {
-            xlPrintBeginObsolete();
+            gsXlPrintBeginGsv0();
         }
-
         for (byte l = 0; l < LINES_AT_ONCE_XL; l++)
         {
             byte line = base + l;
@@ -411,28 +491,20 @@ void xlPrint()
                 for (byte x = 0; x < EPSON_BYTES_PER_LINE; x++) // for each pixel in line
                 {
                     int i = line * EPSON_BYTES_PER_LINE + x;
-                    uint32_t out = bitscale(printBuffer[i], XL_SCALE);
+                    uint32_t out = bitscale(printBuffer[i], 3);
 
-                    byte currentBuffer[XL_SCALE] = {out >> 16 & 0xFF, out >> 8 & 0xFF, out & 0xFF};
-                    for (byte b = 0; b < XL_SCALE; b++)
+                    byte currentBuffer[3] = {out >> 16 & 0xFF, out >> 8 & 0xFF, out & 0xFF};
+                    for (byte b = 0; b < 3; b++)
                     {
-                        if (scale == XL_SCALE)
-                        {
-                            epson_write(currentBuffer[b]);
-                        }
-                        else
-                        {
-                            // TODO: larger than XL scale
-                        }
+                        epson_write(currentBuffer[b]);
                     }
-
                     digitalWrite(PIN_LED, ((i % 60) < 10) ? HIGH : LOW);
                 }
             }
         }
-        if (method == DEFAULT_METHOD)
+        if (baudRate == FAST_BAUD_RATE)
         {
-            xlPrintEnd();
+            finishPrint();
         }
     }
 }
@@ -440,10 +512,10 @@ void xlPrint()
 /**
  * Starts scaled print batch
  */
-void xlPrintBegin()
+void gsXlPrintBeginGsl()
 {
-    unsigned int w = IMG_WIDTH * XL_SCALE;
-    unsigned int h = LINES_AT_ONCE_XL * XL_SCALE;
+    unsigned int w = IMG_WIDTH * 3;
+    unsigned int h = LINES_AT_ONCE_XL * 3;
     unsigned int payload = w / 8 * h + 10;
     epson_write(29);                  // GS
     epson_write(40);                  // (
@@ -463,12 +535,13 @@ void xlPrintBegin()
 }
 
 /**
- * Starts scaled print batch - method for older printers
+ * Starts scaled print batch
+ * method for older printers
  */
-void xlPrintBeginObsolete()
+void gsXlPrintBeginGsv0()
 {
-    unsigned int w = IMG_WIDTH * XL_SCALE;
-    unsigned int h = LINES_AT_ONCE_XL * XL_SCALE;
+    unsigned int w = IMG_WIDTH * 3;
+    unsigned int h = LINES_AT_ONCE_XL * 3;
     epson_write(29);                  // GS
     epson_write(118);                 // v
     epson_write(48);                  // 0
@@ -477,14 +550,6 @@ void xlPrintBeginObsolete()
     epson_write((w / 8) >> 8 & 0xFF); // xH
     epson_write(h);                   // yL
     epson_write(0);                   // yH
-}
-
-/**
- * Finishes "on-the-fly" print batch
- */
-void xlPrintEnd()
-{
-    finishPrint();
 }
 
 /**
@@ -536,13 +601,12 @@ void recieveData()
  */
 void updateDipSwitches()
 {
-    bool a = !digitalRead(PIN_DIP_A);
-    bool b = !digitalRead(PIN_DIP_B);
-    scale = scales[((b << 1) | a)];
+    scale = !digitalRead(PIN_DIP_SCALE) ? 3 : 2;
     cut = !digitalRead(PIN_DIP_CUT);
-    unsigned long oldBaudRate = epson_baudrate();
-    method = !digitalRead(PIN_DIP_RATE) ? DEFAULT_METHOD : OBSOLETE_METHOD;
-    if (oldBaudRate != epson_baudrate())
+    unsigned long oldBaudRate = baudRate;
+    baudRate = !digitalRead(PIN_DIP_BAUDRATE) ? FAST_BAUD_RATE : SLOW_BAUD_RATE;
+    method = !digitalRead(PIN_DIP_METHOD) ? GS_PRINT_METHOD : ESC_PRINT_METHOD;
+    if (oldBaudRate != baudRate)
     {
         epson_start();
     }
@@ -553,14 +617,29 @@ void updateDipSwitches()
  */
 void printerTest()
 {
+    epson_linespacing(30);
     epson_println("xbpxl ready");
     epson_feed(1);
     epson_print("baud rate: ");
-    epson_println(epson_baudrate());
+    epson_println(baudRate);
     epson_print("scale: ");
     epson_println(scale);
     epson_print("method: ");
-    epson_println(method);
+    if (method == ESC_PRINT_METHOD)
+    {
+        epson_println("ESC *");
+    }
+    else
+    {
+        if (baudRate == FAST_BAUD_RATE)
+        {
+            epson_println("GS ( L");
+        }
+        else
+        {
+            epson_println("GS v 0");
+        }
+    }
     epson_feed(2);
     epson_cut();
 }
@@ -576,17 +655,11 @@ void epson_start()
         Serial1.end();
         delay(200);
     }
-    Serial1.begin(epson_baudrate());
+    Serial1.begin(baudRate);
+
+    // reset printer
     Serial1.write(27); // ESC
     Serial1.write(64); // @
-}
-
-/**
- *  Returns baud rate according to selected method 
- */
-unsigned long epson_baudrate()
-{
-    return method == DEFAULT_METHOD ? FAST_BAUD_RATE : SLOW_BAUD_RATE;
 }
 
 /**
@@ -598,6 +671,16 @@ void epson_center()
     Serial1.write(0x1B);
     Serial1.write(0x61);
     Serial1.write(1);
+}
+
+/**
+ * Espon line spacing
+ */
+void epson_linespacing(byte spacing)
+{
+    epson_write(27); // ESC
+    epson_write(51); // 3
+    epson_write(spacing);
 }
 
 /**
