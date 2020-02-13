@@ -2,18 +2,34 @@
 
 **Game Boy Printer XL**
 
-Interface between Game Boy Camera and ESC/POS compatible printers 
-made by Vaclav Mach (www.xx0x.cz/gbpxl)
+An *invisible* interface between Game Boy Camera and ESC/POS compatible printers.
+Improvements, suggestions, experience with various printer models are welcome!
 
-## How to build it
+## How to use it
 
-using custom gbpxl board
+Build your **gbpxl** using kit (see below).
 
 *or*
 
-Arduino Nano Every + TTL->RS232 converter
+**Download the code** from this repository and build it yourself using **Arduino Nano Every** and **TTL-RS232** converter.
+
+## gbpxl kit
+
+**Kit contains:**
+ * all electronic parts, including pre-programmed ATmega4809
+ * PCB (ENIG surface)
+ * Game Boy link cable (half), RJ12 cable for power
+ * DB25 connector, plastic cover, screws
+ 
+**Available here:**
+ * link coming soon
+
+**How it looks:**
+
+<img src="https://github.com/xx0x/gbpxl/raw/master/docs/gbpxl_1.jpg" width="260" /> <img src="https://github.com/xx0x/gbpxl/raw/master/docs/gbpxl_2.jpg" width="260" />
 
 ## Tested with these printers
+Originally intended only for Epson TM-T88 family, but it should work with *most* ESC/POS printers by selecting different DIP settings.
 
 | Printer             | DIP3  | DIP4  |                            
 |:--------------------|:-----:|:-----:|
@@ -30,9 +46,22 @@ Arduino Nano Every + TTL->RS232 converter
 | ON  |   3x        | Yes       | 38400           | GS             |
 | OFF |   2x        | No        | 9600            | ESC \*         |
 
+### Scale
+ * 2x scale is intended for 58 mm thermal printers
+ * 3x scale is intended for 80 mm thermal printers
+
+### Cut
+Cuts the paper after printing each photo. (Some cheaper printers doesn't support it.)
+
+### Baud rate
+Must be the same as selected by the printer (see the manual). If you are not sure, try 9600.
+ * Epson TM-T88 family: DIP switches under metal cover on the bottom.
+ * Wincor Nixdorf TH230: Selected in the menu (the menu is activated by holding Feed button while powering the printer on).
+
 ### GS method
- * "Gs v 0" when baudrate 9600
- * "Gs ( L" when baudrate 38400
+ * "Gs v 0" if baudrate 9600
+ * "Gs ( L" if baudrate 38400
+
 
 ## How to wire the board
 
@@ -74,6 +103,12 @@ Gbpxl board supports 10-30 V as VIN voltage.
   * SC = Arduino pin 2
   
  Don't connect RJ-12 to Arduino Nano Every, it's VIN input supports 21 V max!
+ 
+ ## Author
+ 
+**Václav Mach**
+* http://www.xx0x.cz
+* http://www.vaclav-mach.cz
  
  ## Thanks!
  
