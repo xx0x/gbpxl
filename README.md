@@ -51,7 +51,7 @@ Originally intended only for Epson TM-T88 family, but it should work with *most*
  * 3x scale is intended for 80 mm thermal printers
 
 ### Cut
-Cuts the paper after printing each photo. (Some cheaper printers doesn't support it.)
+Cuts the paper after printing each photo. (Some cheaper printers don't support it.)
 
 ### Baud rate
 Must be the same as selected by the printer (see the manual). If you are not sure, try 9600.
@@ -64,6 +64,8 @@ Must be the same as selected by the printer (see the manual). If you are not sur
 
 
 ## How to wire the board
+
+The link cable contains VCC as well, so in theory it could be used to power gbpxl. But in reality, the provided voltage/current is not enough to run gbpxl without issues, mostly since the MAX232 chip boosts TTL logic levels to higher voltages used by RS232 interface. That's why I decided to include buck regulator and power the device from printer's accessory port. If you want to power gbpxl directly with 5V, use VCC pad located in UPDI.
 
 ### Game Boy Link Connector
 Cable at the end which plugs into the Game Boy.
@@ -110,8 +112,9 @@ Since gbpxl uses ATmega4809, the programming must be done via **UPDI** interface
 
 Sadly, since the UPDI is quite new, there are no cheap programmers available yet, but you can build the **[microUPDI](https://github.com/MCUdude/microUPDI)** or **[jtag2updi](https://github.com/ElTangas/jtag2updi)** quite easily by yourself. When uploading, specify "Arduino Nano Every" as your pinout.
 
-
 <img src="https://github.com/xx0x/gbpxl/raw/master/docs/gbpxl_updi.jpg" width="500" />
+
+**Don't forget to unplug the power before connecting UPDI, since the programmer usually powers the device!**
 
  
  ## Author
