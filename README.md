@@ -5,6 +5,10 @@
 An *invisible* interface between Game Boy Camera and ESC/POS compatible printers.
 Improvements, suggestions, experience with various printer models are welcome!
 
+## Introduction video
+
+[![Video introduction](https://github.com/xx0x/gbpxl/raw/master/docs/gbpxl_video.jpg)](http://www.youtube.com/watch?v=J6ziFhM0pQw "Video introduction")
+
 ## How to use it
 
 Build your **gbpxl** using kit (see below).
