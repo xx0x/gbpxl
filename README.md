@@ -2,7 +2,7 @@
 
 **Game Boy Printer XL**
 
-An *invisible* interface between Game Boy Camera and ESC/POS compatible printers.
+An *invisible* interface between Game Boy Camera and ESC/POS compatible printers. A kit available [at Tindie](https://www.tindie.com/products/xx0x/gbpxl-game-boy-printer-xl-kit/). 
 Improvements, suggestions, experience with various printer models are welcome!
 
 ## Introduction video
@@ -15,7 +15,7 @@ Build your **gbpxl** using kit (see below).
 
 *or*
 
-**Download the code** from this repository and build it yourself using **Arduino Nano Every** and **TTL-RS232** converter.
+**Download the code** from this repository and build it yourself using **Arduino Nano Every** and **TTL-RS232** converter. See the schematic folder for the breadboard design. 
 
 ## gbpxl kit
 
@@ -26,7 +26,7 @@ Build your **gbpxl** using kit (see below).
  * DB25 connector, plastic cover, screws
  
 **Available here:**
- * link coming soon
+https://www.tindie.com/products/xx0x/gbpxl-game-boy-printer-xl-kit/
 
 **How it looks:**
 
