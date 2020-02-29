@@ -91,14 +91,14 @@ Cable at the end which plugs into the Game Boy.
 Cable at the end which plugs into the printer.
 
 ```
-  ___________
+  ____===____
  |           |
  |___________|
   | | | | | |
   1 2 3 4 5 6 
 
-1. GND 
-3. VIN (24 V)
+4. VIN (24 V)
+6. GND 
 ```
 Gbpxl board supports 10-30 V as VIN voltage.
  
