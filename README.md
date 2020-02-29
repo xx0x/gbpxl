@@ -122,6 +122,15 @@ Sadly, since the UPDI is quite new, there are no cheap programmers available yet
 
 **Don't forget to unplug the power before connecting UPDI, since the programmer usually powers the device!**
 
+ ## Additional stuff
+ 
+ ### BTN
+As you can see in the photos and in the schematic, gbpxl also includes a *hidden button*. It's not populated by default, since there was no space for a microswitch, but you can use tweezers or a wired button for more permanent solution. Its' function is to print the last photo (stored in the buffer) again. It's a useful feature for selecting various settings with DIP switches and for development - since you don't have to wait for the transfer between Game Boy and gbpxl.
+
+If you trigger the button when nothing has been printed yet, it will print the photo of the gbpxl author (stored in test_image_custom_frame.h) :-)
+
+ ### LED
+ The LED may look kind of useless, since it's hidden inside the case, but it's useful for development and problem solving with data transfer, since it blinks when recieving or sending data. If you want, you can always drill a hole in the plastic connector case to see the LED blinking...
  
  ## Author
  
