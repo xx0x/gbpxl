@@ -20,15 +20,12 @@ Build your **gbpxl** using kit (see below).
 ## gbpxl kit
 
 **Available here:**
+
 https://www.tindie.com/products/xx0x/gbpxl-game-boy-printer-xl-kit/
 
-**Kit contains:**
- * all electronic parts, including pre-programmed ATmega4809
- * PCB (ENIG surface)
- * Game Boy link cable\* (half), RJ12 cable for power
- * DB25 connector, plastic cover, screws
- 
- \* The kit contains link cable for newer Game Boys (Pocket, Color), since the cables for the original Game Boy are quite hard to get (= expensive). If you want to use it with the original GB, get yourself an adapter as you can see in the video.
+**Build instructions:**
+
+https://github.com/xx0x/gbpxl/blob/master/build-instructions/BUILD_INSTRUCTIONS.md
 
 **How it looks:**
 
