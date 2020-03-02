@@ -22,7 +22,7 @@ Also, download the [schematic](https://github.com/xx0x/gbpxl/raw/master/schemati
 | C2,C3           | 4.7u SMD 0805 capacitor                                    |
 | C4              | 10n SMD 0805 capacitor                                     |
 | C5              | 220u THT capacitor                                         |
-| C6,C7,C8,C10,C9 | 470n SMD 0805 capacitors                                   |
+| C6,C7,C8,C9,C10 | 470n SMD 0805 capacitors                                   |
 | D1              | B340A diode                                                |
 | L1              | 22uH power inductor	                                       |
 | SW1             | 4 position DIP SWITCH                                      |
