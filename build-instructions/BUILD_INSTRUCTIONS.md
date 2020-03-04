@@ -85,7 +85,7 @@ You should end up with something like this.
 
 &nbsp;
 
-Next, solder the 0805 capacitors and resistors. Resistors are easier, since they have their capacitance written on them. I've manually marked 10nF and 100nF capacitors since they look almost identical and there is one piece of each.
+Next, solder the 0805 capacitors and resistors. Resistors are easier, since they have their value written on them. I've manually marked 10nF and 100nF capacitors since they look almost identical and there is one piece of each.
 
 <img src="https://github.com/xx0x/gbpxl/raw/master/build-instructions/img/gbpxl-build-010.jpg" width="600" />
 
