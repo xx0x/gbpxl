@@ -261,7 +261,21 @@ Everything should fit nicely.
 
 ## 7. Step: Cables
 
-First, prepare the link cable. Strip it and cut the unnecessary cables. You will only need BROWN (SO), GREEN (SI), BLUE (SC), RED (GND) cables. Pre-tin them.
+First, prepare the link cable. Strip it and cut the unnecessary cables. You will only need BROWN/GREEN (SO), GREEN/BROWN (SI), BLUE (SC), RED (GND) cables. Pre-tin them.
+
+
+SO/SI are serial output/input lines and inside each cable they are swapped. Since the cable you get with the gbpxl kit was originally split in half, you must use your multimeter or try both variants, if the transfer doesn't work. The colors may differ, check the pinout for the reference.
+
+```
+  ___________
+ |  6  4  2  |                
+  \_5__3__1_/     
+                            
+2. SO (serial output)       |  BROWN / GREEN
+3. SI (serial input)        |  GREEN / BROWN
+5. SC (serial clock)        |  BLUE
+6. GND                      |  RED
+```
 
 **Don't forget to pull the cable through the cable relief!**
 

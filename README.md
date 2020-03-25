@@ -78,13 +78,14 @@ Cable at the end which plugs into the Game Boy.
  |  6  4  2  |                
   \_5__3__1_/     
                             
-2. SO (serial output)       |  BROWN*
-3. SI (serial input)        |  GREEN*
-4. SC (serial clock)        |  BLUE*
+2. SO (serial output)       |  BROWN / GREEN*
+3. SI (serial input)        |  GREEN / BROWN*
+5. SC (serial clock)        |  BLUE*
 6. GND                      |  RED*
 ```
 
 \*Color codes for cheap Game Boy Color link cable, which you can buy on eBay etc.
+GREEN/BROWN color are swapped in each cable - you must try both variants or use your multimeter.
   
 ### RJ-12 connector (power from printer's "DK" port)
 Cable at the end which plugs into the printer.

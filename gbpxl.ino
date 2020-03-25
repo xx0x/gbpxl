@@ -45,7 +45,7 @@
  *                              |  (cheap cable from eBay)
  * 2 = SO (serial output)       |  BROWN
  * 3 = SI (serial input)        |  GREEN
- * 4 = SC (serial clock)        |  BLUE
+ * 5 = SC (serial clock)        |  BLUE
  * 6 = GND                      |  RED
  * 
  * RJ-12 connector (power from printer's "DK" port)
