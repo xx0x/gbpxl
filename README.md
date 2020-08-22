@@ -19,9 +19,13 @@ Build your **gbpxl** using kit (see below).
 
 ## gbpxl kit
 
-**Available here:**
+**~~Available here~~Sold out:**
 
 https://www.tindie.com/products/xx0x/gbpxl-game-boy-printer-xl-kit/
+
+The kit is currently sold out, but the gerber file is public, so you can have your PCBs made at PCBWAY, JLCPCB, Elecrow etc. Gerber file and BOM are available here:
+
+https://github.com/xx0x/gbpxl/tree/master/schematic-bom-pcb
 
 **Build instructions:**
 
