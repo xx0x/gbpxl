@@ -1,6 +1,6 @@
 # gbpxl build instructions
 
-The kit contains quite small components, but it's not THAT difficult to solder it. If you haven't soldered SMD stuff before, I would recommend watching some videos how to to that (eg. https://www.youtube.com/watch?v=f9fbqks3BS8).
+The kit contains quite small components, but it's not THAT difficult to solder it. If you haven't soldered SMD stuff before, I would recommend watching some videos how to to that (eg. https://www.youtube.com/watch?v=f9fbqks3BS8). The PCB surface may differ from pictures (HASL/ENIG), based on the current PCB order.
 
 Also, download the [schematic](https://github.com/xx0x/gbpxl/raw/master/schematic-bom-pcb/gbpxl-schematic.pdf) at first.
 
